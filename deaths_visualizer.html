@@ -1,58 +1,38 @@
-<script src='https://d3js.org/d3.v4.min.js'></script>
 
 <html>
 <head>
     <title>Visualize Drug OD Deaths</title>
+	<style>
+		div, p, .text { font: 12px sans-serif; }
+	</style>
 </head>
 <body>
 
-<div align="center">
-<svg id = "chart"></svg>
-<p>
-  1999 <input type="range" min="1999" max="2017" value="1999" step="1" class="slider" id="yearSlider" align = 'center'> 2017
+<div style="text-align:center;">
+<p><svg id = "chart"></svg></p>
+<p>1999 <input type="range" min="1999" max="2017" value="1999" step="1" class="slider" id="yearSlider"> 2017</p>
 </div>
+
+</body>
+
+<script src='https://d3js.org/d3.v4.min.js'></script>
 
 <script>
 	
-	var chartWidth = 690;
-	var chartHeight = 440;
-	var svg = d3.select('#chart').attr('width', chartWidth).attr('height',chartHeight);
-	var barPadding = 1;
-	var barWidth = 0;
-	var barChart = svg.selectAll('rect');
+	//size of the chart
+	var margin = {top: 20, right: 20, bottom: 50, left: 70},
+    chartWidth = 690 - margin.left - margin.right,
+    chartHeight = 440 - margin.top - margin.bottom;
+	
+	//The slider
 	var slider = document.getElementById('yearSlider')
 	
-	function MakeDeathChart(dataset, height, currentYear) {
-		var i;
-		var currentYearData = [];
-		
-		for (i = 0; i < dataset.length; i++) {
-			if(dataset[i]["year"] == currentYear) {
-				currentYearData.push(dataset[i])
-			}	
-		}
-		barWidth = (chartWidth/currentYearData.length);		
-		
-		//clear the old chart, set up the new one.
-		svg.selectAll("*").remove();
-		svg = d3.select('#chart').attr("width", chartWidth).attr("height", chartHeight).attr('align', 'center');
-		
-		barChart.data(currentYearData)
-		.enter()
-		.append("rect")
-		.attr('y', function(d){
-			return chartHeight - d['rate'] * (chartHeight/height);
-		})
-		.attr("height", function(d) {
-		    return d['rate'] * (chartHeight/height);
-		})
-		.attr("width", barWidth - barPadding)
-		.attr("transform", function (d) {
-		     var translate = barWidth * d['age'];
-		     return "translate("+ translate +")";
-		})
-		.style('fill', '#FC3803');
-	}
+	//the chart
+	var svg = d3.select('#chart')
+	.attr("width", chartWidth + margin.left + margin.right)
+	.attr("height", chartHeight + margin.top + margin.bottom)
+	.append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 	
 	d3.csv("https://raw.githubusercontent.com/CharlesFainLehman/DrugD3/master/data/deaths.csv", function(d) {
 	  return {
@@ -61,24 +41,99 @@
 	    rate : +d.rate,
 	  };
 	}, function(data) {
+
+		var ageRange = d3.extent(data, function(d){return d.age})
+		var rateMax = d3.max(data, function(d){return d.rate})
 		
-		var maxHeight = 0;
-		
-		for (i = 0; i < data.length; i++) {
-			if (data[i]['rate'] > maxHeight) {
-				maxHeight = data[i]['rate'];
-			}
-		}
+		//set up initial chart
+		styleChart();
+		setUpAxes(ageRange, rateMax);
+		MakeDeathChart(data, rateMax, 1999);
 		
 		slider.oninput = function() {
-			MakeDeathChart(data, maxHeight, this.value);
-		}
-				
-		MakeDeathChart(data, maxHeight, 1999);
+			MakeDeathChart(data, rateMax, this.value);
+		}		
 	});
 	
+	//Functions
+	function MakeDeathChart(dataset, maxHeight, currentYear) {
+		var barPadding = 0;
+		var currentYearData = [];	
+		for (var i = 0; i < dataset.length; i++) { if(dataset[i]["year"] == currentYear) { currentYearData.push(dataset[i]) }}
+		var barWidth = (chartWidth/currentYearData.length);
+		
+		//clear the old bars, set up the new one.
+		svg.selectAll("rect").remove();
+		var barChart = svg.selectAll('rect');
+		
+		barChart.data(currentYearData)
+		.enter()
+		.append("rect")
+		.attr('y', function(d){
+			return chartHeight - d['rate'] * (chartHeight/maxHeight);
+		})
+		.attr("height", function(d) {
+		    return d['rate'] * (chartHeight/maxHeight);
+		})
+		.attr("width", barWidth - barPadding)
+		.attr("transform", function (d,i) {
+		     var translate = barWidth * i;
+		     return "translate("+ translate +")";
+		})
+		.style('fill', '#FC3803').style('stroke', 'black');
+		
+	}
 	
+	function setUpAxes(ageRange, rateMax){
+		//x axis
+		var x = d3.scaleLinear().range([0, chartWidth]).domain(ageRange);
+		svg.append("g")
+        .attr("transform", "translate(1," + chartHeight + ")")
+		.attr('class', 'text')
+        .call(d3.axisBottom(x));
+		
+		//x axis label
+		svg.append("text")             
+        .attr("transform",
+              "translate(" + (chartWidth/2) + " ," + 
+                             (chartHeight + margin.bottom - 3) + ")")
+		.attr('class', 'text')
+		.style("text-anchor", "middle")
+        .text("Age");
+		
+		//y axis
+		var y = d3.scaleLinear().range([0, chartHeight]).domain([rateMax, 0]);
+		svg.append("g").call(d3.axisLeft(y)).attr('class', 'text');
+		
+		//y axis label
+		svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x",0 - (chartHeight / 2))
+        .attr("dy", "1em")
+		.attr('class', 'text')
+        .style("text-anchor", "middle")
+        .text("Drug Overdose Deaths per 100,000 pop.");
+	}
+		
+	function styleChart(){
+		//title
+		svg.append("text")
+        .attr("x", 20)             
+        .attr("y", -10)
+		.attr('class', 'text')
+        .text("Drug Overdose Deaths by Age Group");
+		
+		//caption
+		/*
+		svg.append("text")
+        .attr("x", chartWidth - margin.right - 100)             
+        .attr("y", chartHeight + margin.bottom - 20)
+        .attr("text-anchor", "left")  
+		.attr('class', 'text')
+        .text("Source: CDC WONDER");
+		*/
+	}
 </script>
 
-</body>
 </html>
