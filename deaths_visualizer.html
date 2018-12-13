@@ -8,21 +8,75 @@
 
 <div align="center">
 <svg id = "chart"></svg>
-<div class="slidecontainer">
-  1999 <input type="range" min="1999" max="2017" value="1999" step="1" class="slider" id="yearSlider"> 2017
-</div>
+<p>
+  1999 <input type="range" min="1999" max="2017" value="1999" step="1" class="slider" id="yearSlider" align = 'center'> 2017
 </div>
 
 <script>
-	d3.csv("data/deaths.csv", function(d) {
+	
+	var chartWidth = 690;
+	var chartHeight = 440;
+	var svg = d3.select('#chart').attr('width', chartWidth).attr('height',chartHeight);
+	var barPadding = 1;
+	var barWidth = 0;
+	var barChart = svg.selectAll('rect');
+	var slider = document.getElementById('yearSlider')
+	
+	function MakeDeathChart(dataset, height, currentYear) {
+		var i;
+		var currentYearData = [];
+		
+		for (i = 0; i < dataset.length; i++) {
+			if(dataset[i]["year"] == currentYear) {
+				currentYearData.push(dataset[i])
+			}	
+		}
+		barWidth = (chartWidth/currentYearData.length);		
+		
+		//clear the old chart, set up the new one.
+		svg.selectAll("*").remove();
+		svg = d3.select('#chart').attr("width", chartWidth).attr("height", chartHeight).attr('align', 'center');
+		
+		barChart.data(currentYearData)
+		.enter()
+		.append("rect")
+		.attr('y', function(d){
+			return chartHeight - d['rate'] * (chartHeight/height);
+		})
+		.attr("height", function(d) {
+		    return d['rate'] * (chartHeight/height);
+		})
+		.attr("width", barWidth - barPadding)
+		.attr("transform", function (d) {
+		     var translate = barWidth * d['age'];
+		     return "translate("+ translate +")";
+		})
+		.style('fill', '#FC3803');
+	}
+	
+	d3.csv("https://raw.githubusercontent.com/CharlesFainLehman/DrugD3/master/data/deaths.csv", function(d) {
 	  return {
-	    year : d.year,
-	    age : d.age,
+	    year : +d.year,
+	    age : +d.age,
 	    rate : +d.rate,
 	  };
 	}, function(data) {
-	  console.log(data[0]);
+		
+		var maxHeight = 0;
+		
+		for (i = 0; i < data.length; i++) {
+			if (data[i]['rate'] > maxHeight) {
+				maxHeight = data[i]['rate'];
+			}
+		}
+		
+		slider.oninput = function() {
+			MakeDeathChart(data, maxHeight, this.value);
+		}
+				
+		MakeDeathChart(data, maxHeight, 1999);
 	});
+	
 	
 </script>
 
