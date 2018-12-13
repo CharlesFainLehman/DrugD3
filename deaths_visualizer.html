@@ -46,12 +46,13 @@
 		var rateMax = d3.max(data, function(d){return d.rate})
 		
 		//set up initial chart
-		styleChart();
+		updateTitle(1999);
 		setUpAxes(ageRange, rateMax);
 		MakeDeathChart(data, rateMax, 1999);
 		
 		slider.oninput = function() {
 			MakeDeathChart(data, rateMax, this.value);
+			updateTitle(this.value);
 		}		
 	});
 	
@@ -116,23 +117,15 @@
         .text("Drug Overdose Deaths per 100,000 pop.");
 	}
 		
-	function styleChart(){
+	function updateTitle(year){
 		//title
+		svg.select('#title').remove();
 		svg.append("text")
         .attr("x", 20)             
         .attr("y", -10)
+		.attr('id', 'title')
 		.attr('class', 'text')
-        .text("Drug Overdose Deaths by Age Group");
-		
-		//caption
-		/*
-		svg.append("text")
-        .attr("x", chartWidth - margin.right - 100)             
-        .attr("y", chartHeight + margin.bottom - 20)
-        .attr("text-anchor", "left")  
-		.attr('class', 'text')
-        .text("Source: CDC WONDER");
-		*/
+        .text("Drug Overdose Deaths by Age Group (" + year + ")");
 	}
 </script>
 
