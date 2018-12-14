@@ -21,35 +21,19 @@
 
 
 <script>
+	
 	//size of the chart
 	var margin = {top: 20, right: 20, bottom: 50, left: 70, axis: 40},
     width = 690 - margin.left - margin.right,
-    height = 440 - margin.top - margin.bottom;
-	
+    height = 440 - margin.top - margin.bottom,
 	//the chart
-	var svg = d3.select('#chart')
+	svg = d3.select('#chart')
 	.attr("width", width + margin.left + margin.right)
 	.attr("height", height + margin.top + margin.bottom)
 	.append("g")
 	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 	
-	//The slider
-	//var slider = document.getElementById('yearSlider')
-	var slider = d3.sliderBottom()
-    .min(1999)
-    .max(2017)
-    .step(1)
-    .width(width)
-    .displayValue(false)
-	.tickFormat(d3.format('.0f'));	
-	//render the slider
-	d3.select("#slider").append("svg")
-	.attr("width", width + 175)//I think 175 is needed for outer edges in John's set up. ¯\_(ツ)_/¯
-	.attr("height", 200)
-	.append("g")
-	.attr("transform", "translate(" + (margin.left) + ",10)")
-	.call(slider);
-	
+	//Go fetch the csv. Because this is asynchronous, we can't extract the data (I think?), so we just run everything inside the loop.
 	d3.csv("https://raw.githubusercontent.com/CharlesFainLehman/DrugD3/master/data/deaths.csv", function(d) {
 	  return {
 	    year : +d.year,
@@ -57,14 +41,33 @@
 	    rate : +d.rate,
 	  };
 	}, function(data) {
-
-		var ageRange = d3.extent(data, function(d){return d.age})
-		var rateMax = d3.max(data, function(d){return d.rate})
+		
+		var ageRange = d3.extent(data, function(d){return d.age}),
+		rateMax = d3.max(data, function(d){return d.rate}),
+		minYear = d3.min(data, function(d){return d.year}),
+		maxYear = d3.max(data, function(d){return d.year});
 		
 		//set up initial chart
-		updateTitle(1999);
+		updateTitle(minYear);
 		setUpAxes(ageRange, rateMax);
-		MakeDeathChart(data, rateMax, 1999);
+		MakeDeathChart(data, rateMax, minYear);
+		
+		//set up slider
+		var slider = d3.sliderBottom()
+	    .step(1)
+		.min(minYear)
+		.max(maxYear)
+	    .width(width)
+	    .displayValue(false)
+		.tickFormat(d3.format('.0f'));	
+		
+		//render
+		d3.select("#slider").append("svg")
+		.attr("width", width + 175)//I think 175 is needed for outer edges in John's set up. ¯\_(ツ)_/¯
+		.attr("height", 200)
+		.append("g")
+		.attr("transform", "translate(" + (margin.left) + ",10)")
+		.call(slider);
 		
 		//update with slider
 	    slider.on('onchange', val => {
@@ -74,9 +77,9 @@
 	    })
 	});
 	
-	//Functions
+	//And here are the functions
 	function MakeDeathChart(dataset, maxHeight, currentYear) {
-		var currentYearData = [];	
+		var currentYearData = [];
 		for (var i = 0; i < dataset.length; i++) { if(dataset[i]["year"] == currentYear) { currentYearData.push(dataset[i]) }}
 		var barWidth = (width/currentYearData.length);
 		
@@ -98,10 +101,7 @@
 		     var translate = barWidth * i;
 		     return "translate("+ translate +")";
 		})
-		.style('fill', '#FC3803')
-		.style('stroke', '#FC3803') 
-		.style("stroke-width", ".75");
-		
+		.style('fill', '#FC3803');		
 	}
 	
 	function setUpAxes(ageRange, rateMax){
