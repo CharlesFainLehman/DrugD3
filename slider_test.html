@@ -1,0 +1,38 @@
+<html>
+<head>
+    <title>Slider test</title>
+	<style>
+	</style>
+</head>
+
+<body>
+
+<p id="value"></p>
+<div id="slider" style = 'text-align: center;'></div>
+
+</body>
+
+
+<script src="https://d3js.org/d3.v4.js"></script>
+<script src="https://unpkg.com/d3-simple-slider"></script>
+
+<script>
+var slider = d3.sliderTop()
+    .min(1999)
+    .max(2017)
+    .step(1)
+    .width(690)
+    .displayValue(false)
+    .on('onchange', val => {
+      d3.select("#value").text(val);
+    });
+
+  d3.select("#slider").append("svg")
+    .attr("width", 690 + 200)
+    .append("g")
+    .attr("transform", "translate(0,0)")
+    .call(slider);
+
+</script>
+
+</html>

@@ -3,36 +3,52 @@
 <head>
     <title>Visualize Drug OD Deaths</title>
 	<style>
-		div, p, .text { font: 12px sans-serif; }
+		div, p, .text, .graph_axis { font: 12px sans-serif; }
 	</style>
 </head>
 <body>
 
-<div style="text-align:center;">
-<p><svg id = "chart"></svg></p>
-<p>1999 <input type="range" min="1999" max="2017" value="1999" step="1" class="slider" id="yearSlider"> 2017</p>
+<div style = 'align: center;'>
+	<svg id = "chart"></svg>
 </div>
+<div id = 'slider' style = 'align: center;'></div>
+
 
 </body>
 
 <script src='https://d3js.org/d3.v4.min.js'></script>
+<script src="https://unpkg.com/d3-simple-slider"></script> <!-- John Walley's d3-simple-slider: https://github.com/johnwalley/d3-simple-slider-->
+
 
 <script>
-	
 	//size of the chart
-	var margin = {top: 20, right: 20, bottom: 50, left: 70},
-    chartWidth = 690 - margin.left - margin.right,
-    chartHeight = 440 - margin.top - margin.bottom;
-	
-	//The slider
-	var slider = document.getElementById('yearSlider')
+	var margin = {top: 20, right: 20, bottom: 50, left: 70, axis: 40},
+    width = 690 - margin.left - margin.right,
+    height = 440 - margin.top - margin.bottom;
 	
 	//the chart
 	var svg = d3.select('#chart')
-	.attr("width", chartWidth + margin.left + margin.right)
-	.attr("height", chartHeight + margin.top + margin.bottom)
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
 	.append("g")
 	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+	
+	//The slider
+	//var slider = document.getElementById('yearSlider')
+	var slider = d3.sliderBottom()
+    .min(1999)
+    .max(2017)
+    .step(1)
+    .width(width)
+    .displayValue(false)
+	.tickFormat(d3.format('.0f'));	
+	//render the slider
+	d3.select("#slider").append("svg")
+	.attr("width", width + 175)//I think 175 is needed for outer edges in John's set up. ¯\_(ツ)_/¯
+	.attr("height", 200)
+	.append("g")
+	.attr("transform", "translate(" + (margin.left) + ",10)")
+	.call(slider);
 	
 	d3.csv("https://raw.githubusercontent.com/CharlesFainLehman/DrugD3/master/data/deaths.csv", function(d) {
 	  return {
@@ -50,18 +66,19 @@
 		setUpAxes(ageRange, rateMax);
 		MakeDeathChart(data, rateMax, 1999);
 		
-		slider.oninput = function() {
-			MakeDeathChart(data, rateMax, this.value);
-			updateTitle(this.value);
-		}		
+		//update with slider
+	    slider.on('onchange', val => {
+			MakeDeathChart(data, rateMax, val);
+			updateTitle(val);
+			setUpAxes(ageRange, rateMax);
+	    })
 	});
 	
 	//Functions
 	function MakeDeathChart(dataset, maxHeight, currentYear) {
-		var barPadding = 0;
 		var currentYearData = [];	
 		for (var i = 0; i < dataset.length; i++) { if(dataset[i]["year"] == currentYear) { currentYearData.push(dataset[i]) }}
-		var barWidth = (chartWidth/currentYearData.length);
+		var barWidth = (width/currentYearData.length);
 		
 		//clear the old bars, set up the new one.
 		svg.selectAll("rect").remove();
@@ -71,48 +88,54 @@
 		.enter()
 		.append("rect")
 		.attr('y', function(d){
-			return chartHeight - d['rate'] * (chartHeight/maxHeight);
+			return height - d['rate'] * (height/maxHeight);
 		})
 		.attr("height", function(d) {
-		    return d['rate'] * (chartHeight/maxHeight);
+		    return d['rate'] * (height/maxHeight);
 		})
-		.attr("width", barWidth - barPadding)
+		.attr("width", barWidth)
 		.attr("transform", function (d,i) {
 		     var translate = barWidth * i;
 		     return "translate("+ translate +")";
 		})
-		.style('fill', '#FC3803').style('stroke', 'black');
+		.style('fill', '#FC3803')
+		.style('stroke', '#FC3803') 
+		.style("stroke-width", ".75");
 		
 	}
 	
 	function setUpAxes(ageRange, rateMax){
+		d3.selectAll('.graph_axis').remove();
+
 		//x axis
-		var x = d3.scaleLinear().range([0, chartWidth]).domain(ageRange);
+		var x = d3.scaleLinear().range([0, width]).domain(ageRange);
 		svg.append("g")
-        .attr("transform", "translate(1," + chartHeight + ")")
-		.attr('class', 'text')
+        .attr("transform", "translate(0," + height + ")")
+		.attr('class', 'graph_axis')
         .call(d3.axisBottom(x));
 		
 		//x axis label
 		svg.append("text")             
         .attr("transform",
-              "translate(" + (chartWidth/2) + " ," + 
-                             (chartHeight + margin.bottom - 3) + ")")
-		.attr('class', 'text')
+              "translate(" + (width/2) + " ," + 
+                             (height + margin.axis) + ")")
+		.attr('class', 'graph_axis')
 		.style("text-anchor", "middle")
         .text("Age");
 		
 		//y axis
-		var y = d3.scaleLinear().range([0, chartHeight]).domain([rateMax, 0]);
-		svg.append("g").call(d3.axisLeft(y)).attr('class', 'text');
+		var y = d3.scaleLinear().range([height, 0]).domain([0, rateMax]);
+		svg.append("g")
+		.attr('class', 'graph_axis')
+		.call(d3.axisLeft(y));
 		
 		//y axis label
 		svg.append("text")
         .attr("transform", "rotate(-90)")
-        .attr("y", 0 - margin.left)
-        .attr("x",0 - (chartHeight / 2))
+        .attr("y", 0 - margin.axis)
+        .attr("x",0 - (height / 2))
         .attr("dy", "1em")
-		.attr('class', 'text')
+		.attr('class', 'graph_axis')
         .style("text-anchor", "middle")
         .text("Drug Overdose Deaths per 100,000 pop.");
 	}
