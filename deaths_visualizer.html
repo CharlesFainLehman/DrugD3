@@ -3,33 +3,32 @@
 <head>
     <title>Visualize Drug OD Deaths</title>
 	<style>
-		div, p, .text, .graph_axis { font: 12px sans-serif; }
+		div, p, .text, .graph_axis { font: 12px sans-serif; align: center; }
+		.line-chart { border: 0px solid gray; }
 	</style>
+	<script src='https://d3js.org/d3.v4.min.js'></script>
+	<script src="https://unpkg.com/d3-simple-slider"></script> <!-- John Walley's d3-simple-slider: https://github.com/johnwalley/d3-simple-slider-->
 </head>
 <body>
-
-<div style = 'align: center;'>
+ASDF
+<div>
 	<svg id = "chart"></svg>
 </div>
-<div id = 'slider' style = 'align: center;'></div>
-
-
+<div id = 'slider'></div>
+JKJL
 </body>
-
-<script src='https://d3js.org/d3.v4.min.js'></script>
-<script src="https://unpkg.com/d3-simple-slider"></script> <!-- John Walley's d3-simple-slider: https://github.com/johnwalley/d3-simple-slider-->
-
 
 <script>
 	
 	//size of the chart
-	var margin = {top: 20, right: 20, bottom: 50, left: 70, axis: 40},
+	var margin = {top: 20, right: 20, bottom: 50, left: 50, axis: 40},
     width = 690 - margin.left - margin.right,
     height = 440 - margin.top - margin.bottom,
 	//the chart
 	svg = d3.select('#chart')
 	.attr("width", width + margin.left + margin.right)
 	.attr("height", height + margin.top + margin.bottom)
+	.attr('class', 'line-chart')
 	.append("g")
 	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 	
@@ -62,9 +61,10 @@
 		.tickFormat(d3.format('.0f'));	
 		
 		//render
-		d3.select("#slider").append("svg")
+		d3.select("#slider")
+		.append("svg")
 		.attr("width", width + 175)//I think 175 is needed for outer edges in John's set up. ¯\_(ツ)_/¯
-		.attr("height", 200)
+		.attr("height", 50)
 		.append("g")
 		.attr("transform", "translate(" + (margin.left) + ",10)")
 		.call(slider);
